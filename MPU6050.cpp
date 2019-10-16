@@ -267,55 +267,78 @@ float MPU6050::get_gyr_z()
 /**
  * @brief Calibrates gyroscope and estimates sensor variances
  * 
- * This function requires at minimum (MPU6050_CAL_SAMPLES * 24) bytes of RAM
+ * This function requires at minimum (MPU6050_CAL_SAMPLES * 4) bytes of RAM
  * to execute. The calibration parameters calculated by this method are only
  * valid if it executes while the IMU is at rest.
  */
 void MPU6050::calibrate()
 {
+	// Sample storage
+	float samples[MPU6050_CAL_SAMPLES];
+
 	// Reset gyro offsets
 	gyr_x_cal = 0.0f;
 	gyr_y_cal = 0.0f;
 	gyr_z_cal = 0.0f;
 
-	// Sample storage
-	float gyr_x_samples[MPU6050_CAL_SAMPLES];
-	float gyr_y_samples[MPU6050_CAL_SAMPLES];
-	float gyr_z_samples[MPU6050_CAL_SAMPLES];
-	float acc_x_samples[MPU6050_CAL_SAMPLES];
-	float acc_y_samples[MPU6050_CAL_SAMPLES];
-	float acc_z_samples[MPU6050_CAL_SAMPLES];
-
-	// Take samples
+	// Accelerometer X
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		gyr_x_samples[i] = gyr_x;
-		gyr_y_samples[i] = gyr_y;
-		gyr_z_samples[i] = gyr_z;
-		acc_x_samples[i] = acc_x;
-		acc_y_samples[i] = acc_y;
-		acc_z_samples[i] = acc_z;
+		samples[i] = acc_x;
 	}
+	float acc_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_x_var = variance(samples, acc_x_mean, MPU6050_CAL_SAMPLES);
 
-	// Compute means and variances
-	float gyr_x_avg = mean(gyr_x_samples, MPU6050_CAL_SAMPLES);
-	float gyr_y_avg = mean(gyr_y_samples, MPU6050_CAL_SAMPLES);
-	float gyr_z_avg = mean(gyr_z_samples, MPU6050_CAL_SAMPLES);
-	float acc_x_avg = mean(acc_x_samples, MPU6050_CAL_SAMPLES);
-	float acc_y_avg = mean(acc_y_samples, MPU6050_CAL_SAMPLES);
-	float acc_z_avg = mean(acc_z_samples, MPU6050_CAL_SAMPLES);
-	gyr_x_var = variance(gyr_x_samples, gyr_x_avg, MPU6050_CAL_SAMPLES);
-	gyr_y_var = variance(gyr_y_samples, gyr_y_avg, MPU6050_CAL_SAMPLES);
-	gyr_z_var = variance(gyr_z_samples, gyr_z_avg, MPU6050_CAL_SAMPLES);
-	acc_x_var = variance(acc_x_samples, acc_x_avg, MPU6050_CAL_SAMPLES);
-	acc_y_var = variance(acc_y_samples, acc_y_avg, MPU6050_CAL_SAMPLES);
-	acc_z_var = variance(acc_z_samples, acc_z_avg, MPU6050_CAL_SAMPLES);
+	// Accelerometer Y
+	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
+	{
+		update();
+		samples[i] = acc_y;
+	}
+	float acc_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_y_var = variance(samples, acc_y_mean, MPU6050_CAL_SAMPLES);
 
-	// Copy gyroscope offsets
-	gyr_x_cal = gyr_x_avg;
-	gyr_y_cal = gyr_y_avg;
-	gyr_z_cal = gyr_z_avg;
+	// Accelerometer Z
+	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
+	{
+		update();
+		samples[i] = acc_z;
+	}
+	float acc_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_z_var = variance(samples, acc_z_mean, MPU6050_CAL_SAMPLES);
+
+	// Gyroscope X
+	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
+	{
+		update();
+		samples[i] = gyr_x;
+	}
+	float gyr_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_x_var = variance(samples, gyr_x_mean, MPU6050_CAL_SAMPLES);
+
+	// Gyroscope Y
+	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
+	{
+		update();
+		samples[i] = gyr_y;
+	}
+	float gyr_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_y_var = variance(samples, gyr_y_mean, MPU6050_CAL_SAMPLES);
+
+	// Gyroscope Z
+	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
+	{
+		update();
+		samples[i] = gyr_z;
+	}
+	float gyr_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_z_var = variance(samples, gyr_z_mean, MPU6050_CAL_SAMPLES);
+
+	// Assign gyro offsets
+	gyr_x_cal = gyr_x_mean;
+	gyr_y_cal = gyr_y_mean;
+	gyr_z_cal = gyr_z_mean;
 }
 
 /**

@@ -7,7 +7,7 @@
  * library acts as an I2C interface with the device for the Arduino and Mbed
  * platforms. This class supports gyroscope calibration by averaging the macro
  * MPU6050_CAL_SAMPLES number of samples. Note that this operation requires
- * at minimum (MPU6050_CAL_SAMPLES * 24) bytes of RAM.
+ * at minimum (MPU6050_CAL_SAMPLES * 4) bytes of RAM.
  * 
  * Dependencies:
  * - I2CDevice: https://github.com/doates625/I2CDevice.git
