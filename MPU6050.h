@@ -3,18 +3,21 @@
  * @brief Class for interfacing with MPU6050 6-axis IMU
  * @author Dan Oates (WPI Class of 2020)
  * 
- * The MPU6050 is a 6-axis accelerometer and gyroscope with a built-in
- * temperature sensor. This library acts as an I2C interface with the device
- * with suppport for both the Arduino and Mbed platforms. This library does not
- * include supports for reading the temperature sensor.
+ * The MPU6050 is a 6-axis accelerometer, gyroscope, and thermometer. This
+ * library acts as an I2C interface with the device for the Arduino and Mbed
+ * platforms. This class supports gyroscope calibration by averaging the macro
+ * MPU6050_CAL_SAMPLES number of samples. Note that this operation requires
+ * at minimum (MPU6050_CAL_SAMPLES * 24) bytes of RAM.
  * 
  * Dependencies:
  * - I2CDevice: https://github.com/doates625/I2CDevice.git
  * - Platform: https://github.com/doates625/Platform.git
  * - Unions: https://github.com/doates625/Unions.git
+ * - CppUtil: https://github.com/doates625/CppUtil.git
  * 
  * References:
  * - Datasheet: http://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf
+ * - Registers: https://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Register-Map1.pdf
  */
 #pragma once
 #include <I2CDevice.h>
@@ -29,50 +32,132 @@
 #endif
 
 /**
+ * Calibration Sample Count
+ */
+#if !defined(MPU6050_CAL_SAMPLES)
+	#warning MPU6050_CAL_SAMPLES not defined. Setting to 100...
+	#define MPU6050_CAL_SAMPLES 100
+#endif
+
+/**
  * Class Declaration
  */
 class MPU6050
 {
 public:
 
-	// Initialization
-	MPU6050(I2CDEVICE_I2C_CLASS* i2c);
-	void init();
+	// Accelerometer Range
+	typedef enum
+	{
+		acc_2G,		// +/-2G
+		acc_4G,		// +/-4G
+		acc_8G,		// +/-8G
+		acc_16G,	// +/-16G
+	}
+	acc_range_t;
 
-	// Calibration
-	void calibrate(float num_samples = 100);
-	void set_gyro_cals(float vel_x_cal, float vel_y_cal, float vel_z_cal);
-	float get_vel_x_cal();
-	float get_vel_y_cal();
-	float get_vel_z_cal();
-	float get_vel_variance();
-	float get_acc_variance();
+	// Gyroscope Range
+	typedef enum
+	{
+		gyr_250dps,		// +/-250 deg/s
+		gyr_500dps,		// +/-500 deg/s
+		gyr_1000dps,	// +/-1000 deg/s
+		gyr_2000dps,	// +/-2000 deg/s
+	}
+	gyr_range_t;
 
-	// Reading Retrieval
+	// Initialization and Basics
+	MPU6050(I2CDEVICE_I2C_CLASS* i2c, bool addr_sel = false);
+	bool init();
+	void set_acc_range(acc_range_t range);
+	void set_gyr_range(gyr_range_t range);
 	void update();
-	float get_vel_x();
-	float get_vel_y();
-	float get_vel_z();
+
+	// Accelerometer
+	void update_acc();
 	float get_acc_x();
 	float get_acc_y();
 	float get_acc_z();
 
+	// Thermometer
+	void update_tmp();
+	float get_tmp_c();
+
+	// Gyroscope
+	void update_gyr();
+	float get_gyr_x();
+	float get_gyr_y();
+	float get_gyr_z();
+
+	// Calibration
+	void calibrate();
+	float get_acc_x_var();
+	float get_acc_y_var();
+	float get_acc_z_var();
+	float get_gyr_x_var();
+	float get_gyr_y_var();
+	float get_gyr_z_var();
+	float get_gyr_x_cal();
+	float get_gyr_y_cal();
+	float get_gyr_z_cal();
+	void set_gyr_x_cal(float offset);
+	void set_gyr_y_cal(float offset);
+	void set_gyr_z_cal(float offset);
+
 protected:
 
-	// I2C Registers
-	static const uint8_t i2c_addr = 0x68;
+	// I2C Communication
+	uint8_t i2c_addr;
+	I2CDevice i2c;
+
+	// Config Registers
+	static const uint8_t reg_whoami_addr = 0x75;
 	static const uint8_t reg_pwrmgmt_addr = 0x6B;
 	static const uint8_t reg_pwrmgmt_wake = 0x00;
-	static const uint8_t reg_data_addr = 0x3B;
 
-	// Unit Conversions
-	static const float vel_per_cnt;
-	static const float acc_per_cnt;
+	// Gyroscope Config
+	static const uint8_t reg_gyr_config_addr = 0x1B;
+	static const uint8_t reg_gyr_config_250dps = 0x0 << 3;
+	static const uint8_t reg_gyr_config_500dps = 0x1 << 3;
+	static const uint8_t reg_gyr_config_1000dps = 0x2 << 3;
+	static const uint8_t reg_gyr_config_2000dps = 0x3 << 3;
+	float gyr_per_lsb;
 
-	// Class Members
-	I2CDevice i2c;
-	float vel_x, vel_y, vel_z;
-	float acc_x, acc_y, acc_z;
-	float vel_x_cal, vel_y_cal, vel_z_cal;
-	float vel_var, acc_var;
+	// Accelerometer Config
+	static const uint8_t reg_acc_config_addr = 0x1C;
+	static const uint8_t reg_acc_config_2G = 0x0 << 3;
+	static const uint8_t reg_acc_config_4G = 0x1 << 3;
+	static const uint8_t reg_acc_config_8G = 0x2 << 3;
+	static const uint8_t reg_acc_config_16G = 0x3 << 3;
+	float acc_per_lsb;
+
+	// Accelerometer Reading
+	static const uint8_t reg_acc_x_addr = 0x3B;
+	static const uint8_t reg_acc_y_addr = 0x3D;
+	static const uint8_t reg_acc_z_addr = 0x3F;
+	float acc_x; bool read_acc_x;
+	float acc_y; bool read_acc_y;
+	float acc_z; bool read_acc_z;
+	void read_acc();
+
+	// Thermometer Reading
+	static const float tmp_per_lsb;
+	static const float tmp_offset_c;
+	static const uint8_t reg_tmp_addr = 0x41;
+	float tmp_c; bool read_tmp_c;
+	void read_tmp();
+
+	// Gyroscope Reading
+	static const uint8_t reg_gyr_x_addr = 0x43;
+	static const uint8_t reg_gyr_y_addr = 0x45;
+	static const uint8_t reg_gyr_z_addr = 0x47;
+	float gyr_x; bool read_gyr_x;
+	float gyr_y; bool read_gyr_y;
+	float gyr_z; bool read_gyr_z;
+	void read_gyr();
+
+	// Calibration
+	float acc_x_var, acc_y_var, acc_z_var;
+	float gyr_x_var, gyr_y_var, gyr_z_var;
+	float gyr_x_cal, gyr_y_cal, gyr_z_cal;
 };
