@@ -4,6 +4,8 @@
  */
 #include "MPU6050.h"
 #include <CppUtil.h>
+using CppUtil::mean;
+using CppUtil::var;
 
 /**
  * Static Constants
@@ -287,8 +289,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = acc_x;
 	}
-	float acc_x_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	acc_x_var = Util::var(samples, MPU6050_CAL_SAMPLES, acc_x_mean);
+	float acc_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_x_var = var(samples, MPU6050_CAL_SAMPLES, acc_x_mean);
 
 	// Accelerometer Y
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
@@ -296,8 +298,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = acc_y;
 	}
-	float acc_y_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	acc_y_var = Util::var(samples, MPU6050_CAL_SAMPLES, acc_y_mean);
+	float acc_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_y_var = var(samples, MPU6050_CAL_SAMPLES, acc_y_mean);
 
 	// Accelerometer Z
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
@@ -305,8 +307,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = acc_z;
 	}
-	float acc_z_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	acc_z_var =  Util::var(samples, MPU6050_CAL_SAMPLES, acc_z_mean);
+	float acc_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	acc_z_var =  var(samples, MPU6050_CAL_SAMPLES, acc_z_mean);
 
 	// Gyroscope X
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
@@ -314,8 +316,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = gyr_x;
 	}
-	float gyr_x_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	gyr_x_var = Util::var(samples, MPU6050_CAL_SAMPLES, gyr_x_mean);
+	float gyr_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_x_var = var(samples, MPU6050_CAL_SAMPLES, gyr_x_mean);
 
 	// Gyroscope Y
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
@@ -323,8 +325,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = gyr_y;
 	}
-	float gyr_y_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	gyr_y_var = Util::var(samples, MPU6050_CAL_SAMPLES, gyr_y_mean);
+	float gyr_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_y_var = var(samples, MPU6050_CAL_SAMPLES, gyr_y_mean);
 
 	// Gyroscope Z
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
@@ -332,8 +334,8 @@ void MPU6050::calibrate()
 		update();
 		samples[i] = gyr_z;
 	}
-	float gyr_z_mean = Util::mean(samples, MPU6050_CAL_SAMPLES);
-	gyr_z_var = Util::var(samples, MPU6050_CAL_SAMPLES, gyr_z_mean);
+	float gyr_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
+	gyr_z_var = var(samples, MPU6050_CAL_SAMPLES, gyr_z_mean);
 
 	// Assign gyro offsets
 	gyr_x_cal = gyr_x_mean;
