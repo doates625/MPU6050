@@ -11,7 +11,7 @@ using CppUtil::var;
  * Static Constants
  */
 const float MPU6050::tmp_per_lsb = 1.0f / 340.0f;
-const float MPU6050::tmp_offset_c = 36.53f;
+const float MPU6050::tmp_offset_C = 36.53f;
 
 /**
  * @brief Constructor for MPU-6050 interface
@@ -167,7 +167,7 @@ float MPU6050::get_acc_x()
 		read_acc_x = false;
 		return acc_x;
 	}
-	return i2c.read_int16(reg_acc_x_addr) * acc_per_lsb;
+	return int16_to_acc(i2c.read_int16(reg_acc_x_addr));
 }
 
 /**
@@ -180,7 +180,7 @@ float MPU6050::get_acc_y()
 		read_acc_y = false;
 		return acc_y;
 	}
-	return i2c.read_int16(reg_acc_y_addr) * acc_per_lsb;
+	return int16_to_acc(i2c.read_int16(reg_acc_y_addr));
 }
 
 /**
@@ -193,7 +193,7 @@ float MPU6050::get_acc_z()
 		read_acc_z = false;
 		return acc_z;
 	}
-	return i2c.read_int16(reg_acc_z_addr) * acc_per_lsb;
+	return int16_to_acc(i2c.read_int16(reg_acc_z_addr));
 }
 
 /**
@@ -215,7 +215,7 @@ float MPU6050::get_tmp_c()
 		read_tmp_c = false;
 		return tmp_c;
 	}
-	return i2c.read_int16(reg_tmp_addr) * tmp_per_lsb + tmp_offset_c;
+	return int16_to_tmp(i2c.read_int16(reg_tmp_addr));
 }
 
 /**
@@ -237,7 +237,7 @@ float MPU6050::get_gyr_x()
 		read_gyr_x = false;
 		return gyr_x;
 	}
-	return i2c.read_int16(reg_gyr_x_addr) * gyr_per_lsb - gyr_x_cal;;
+	return int16_to_gyr_x(i2c.read_int16(reg_gyr_x_addr));
 }
 
 /**
@@ -250,7 +250,7 @@ float MPU6050::get_gyr_y()
 		read_gyr_y = false;
 		return gyr_y;
 	}
-	return i2c.read_int16(reg_gyr_y_addr) * gyr_per_lsb - gyr_y_cal;
+	return int16_to_gyr_y(i2c.read_int16(reg_gyr_y_addr));
 }
 
 /**
@@ -263,7 +263,7 @@ float MPU6050::get_gyr_z()
 		read_gyr_z = false;
 		return gyr_z;
 	}
-	return i2c.read_int16(reg_gyr_z_addr) * gyr_per_lsb - gyr_z_cal;
+	return int16_to_gyr_z(i2c.read_int16(reg_gyr_z_addr));
 }
 
 /**
@@ -447,9 +447,9 @@ void MPU6050::set_gyr_z_cal(float offset)
  */
 void MPU6050::read_acc()
 {
-	acc_x = i2c.read_int16() * acc_per_lsb; read_acc_x = true;
-	acc_y = i2c.read_int16() * acc_per_lsb; read_acc_y = true;
-	acc_z = i2c.read_int16() * acc_per_lsb; read_acc_z = true;
+	acc_x = int16_to_acc(i2c.read_int16()); read_acc_x = true;
+	acc_y = int16_to_acc(i2c.read_int16()); read_acc_y = true;
+	acc_z = int16_to_acc(i2c.read_int16()); read_acc_z = true;
 }
 
 /**
@@ -457,16 +457,56 @@ void MPU6050::read_acc()
  */
 void MPU6050::read_tmp()
 {
-	tmp_c = i2c.read_uint16() * tmp_per_lsb + tmp_offset_c;
+	tmp_c = int16_to_tmp(i2c.read_int16());
 	read_tmp_c = true;
-} 
+}
 
 /**
  * @brief Reads gyr registers after call to I2CDevice::read_sequence()
  */
 void MPU6050::read_gyr()
 {
-	gyr_x = i2c.read_int16() * gyr_per_lsb; read_gyr_x = true;
-	gyr_y = i2c.read_int16() * gyr_per_lsb; read_gyr_y = true;
-	gyr_z = i2c.read_int16() * gyr_per_lsb; read_gyr_z = true;
+	gyr_x = int16_to_gyr_x(i2c.read_int16()); read_gyr_x = true;
+	gyr_y = int16_to_gyr_y(i2c.read_int16()); read_gyr_y = true;
+	gyr_z = int16_to_gyr_z(i2c.read_int16()); read_gyr_z = true;
+}
+
+/**
+ * @brief Converts int16 acceleration to [m/s^2]
+ */
+float MPU6050::int16_to_acc(int16_t raw)
+{
+	return raw * acc_per_lsb;
+}
+
+/**
+ * @brief Converts int16 temperature to [deg C]
+ */
+float MPU6050::int16_to_tmp(int16_t raw)
+{
+	return raw * tmp_per_lsb + tmp_offset_C;
+}
+
+/**
+ * @brief Converts int16 gyroscope x to [rad/s]
+ */
+float MPU6050::int16_to_gyr_x(int16_t raw)
+{
+	return raw * gyr_per_lsb - gyr_x_cal;
+}
+
+/**
+ * @brief Converts int16 gyroscope y to [rad/s]
+ */
+float MPU6050::int16_to_gyr_y(int16_t raw)
+{
+	return raw * gyr_per_lsb - gyr_y_cal;
+}
+
+/**
+ * @brief Converts int16 gyroscope z to [rad/s]
+ */
+float MPU6050::int16_to_gyr_z(int16_t raw)
+{
+	return raw * gyr_per_lsb - gyr_z_cal;
 }

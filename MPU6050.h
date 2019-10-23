@@ -122,13 +122,15 @@ protected:
 	float acc_x; bool read_acc_x;
 	float acc_y; bool read_acc_y;
 	float acc_z; bool read_acc_z;
+	float int16_to_acc(int16_t raw);
 	void read_acc();
 
 	// Thermometer Reading
 	static const float tmp_per_lsb;
-	static const float tmp_offset_c;
+	static const float tmp_offset_C;
 	static const uint8_t reg_tmp_addr = 0x41;
 	float tmp_c; bool read_tmp_c;
+	float int16_to_tmp(int16_t raw);
 	void read_tmp();
 
 	// Gyroscope Reading
@@ -138,6 +140,9 @@ protected:
 	float gyr_x; bool read_gyr_x;
 	float gyr_y; bool read_gyr_y;
 	float gyr_z; bool read_gyr_z;
+	float int16_to_gyr_x(int16_t raw);
+	float int16_to_gyr_y(int16_t raw);
+	float int16_to_gyr_z(int16_t raw);
 	void read_gyr();
 
 	// Calibration
