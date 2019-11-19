@@ -9,7 +9,7 @@
 /**
  * Minimum I2C Buffer Size
  */
-#if defined(PLATFORM_MBED) && I2CDEVICE_BUFFER_SIZE < 14
+#if I2CDEVICE_BUFFER_SIZE < 14
 	#error MPU6050 requires I2CDEVICE_BUFFER_SIZE >= 14
 #endif
 
