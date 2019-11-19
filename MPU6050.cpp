@@ -443,7 +443,7 @@ void MPU6050::set_gyr_z_cal(float offset)
 }
 
 /**
- * @brief Reads acc registers after call to I2CDevice::read_sequence()
+ * @brief Reads acc registers after call to I2CDevice::get_seq()
  */
 void MPU6050::read_acc()
 {
@@ -453,7 +453,7 @@ void MPU6050::read_acc()
 }
 
 /**
- * @brief Reads tmp registers after call to I2CDevice::read_sequence()
+ * @brief Reads tmp registers after call to I2CDevice::get_seq()
  */
 void MPU6050::read_tmp()
 {
@@ -462,7 +462,7 @@ void MPU6050::read_tmp()
 }
 
 /**
- * @brief Reads gyr registers after call to I2CDevice::read_sequence()
+ * @brief Reads gyr registers after call to I2CDevice::get_seq()
  */
 void MPU6050::read_gyr()
 {
