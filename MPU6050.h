@@ -10,9 +10,7 @@
  * Minimum I2C Buffer Size
  */
 #if defined(PLATFORM_MBED) && I2CDEVICE_BUFFER_SIZE < 14
-	#warning MPU6050 requires I2CDEVICE_BUFFER_SIZE >= 14. Setting to 14.
-	#undef I2CDEVICE_BUFFER_SIZE
-	#define I2CDEVICE_BUFFER_SIZE 14
+	#error MPU6050 requires I2CDEVICE_BUFFER_SIZE >= 14
 #endif
 
 /**
@@ -51,7 +49,7 @@ public:
 	gyr_range_t;
 
 	// Initialization and Basics
-	MPU6050(I2CDEVICE_I2C_CLASS* i2c, bool addr_sel = false);
+	MPU6050(I2CDevice::i2c_t* i2c, bool addr_sel = false);
 	bool init();
 	void set_acc_range(acc_range_t range);
 	void set_gyr_range(gyr_range_t range);

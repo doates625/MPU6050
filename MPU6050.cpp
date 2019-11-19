@@ -18,11 +18,11 @@ const float MPU6050::tmp_offset_C = 36.53f;
  * @param i2c Platform-specific I2C interface
  * @param add_sel Address select line (1 = high, 0 = low)
  */
-MPU6050::MPU6050(I2CDEVICE_I2C_CLASS* i2c, bool addr_sel)
+MPU6050::MPU6050(I2CDevice::i2c_t* i2c, bool addr_sel) :
+	i2c(i2c, addr_sel ? 0x69 : 0x68, Struct::msb_first)
 {
 	// I2C interface
 	this->i2c_addr = addr_sel ? 0x69 : 0x68;
-	this->i2c = I2CDevice(i2c, i2c_addr, I2CDevice::msb_first);
 
 	// State data
 	this->acc_x = 0.0f; read_acc_x = false;
@@ -46,7 +46,7 @@ MPU6050::MPU6050(I2CDEVICE_I2C_CLASS* i2c, bool addr_sel)
 bool MPU6050::init()
 {
 	// Check I2C address in WHOAMI register
-	uint8_t addr = i2c.read_uint8(reg_whoami_addr);
+	uint8_t addr = i2c.get_seq(reg_whoami_addr, 1);
 	if ((addr >> 1) != (i2c_addr >> 1))
 	{
 		return false;
@@ -57,7 +57,7 @@ bool MPU6050::init()
 	set_gyr_range(gyr_250dps);
 
 	// Wake up device (might need to put first...)
-	i2c.write_uint8(reg_pwrmgmt_addr, reg_pwrmgmt_wake);
+	i2c.set(reg_pwrmgmt_addr, reg_pwrmgmt_wake);
 	
 	// Everything succeeded
 	return true;
@@ -96,7 +96,7 @@ void MPU6050::set_acc_range(acc_range_t range)
 			acc_range_g = 16.0f;
 			break;
 	}
-	i2c.write_uint8(reg_acc_config_addr, reg_val);
+	i2c.set(reg_acc_config_addr, reg_val);
 	acc_per_lsb = acc_range_g * 9.81f / 32768.0f;
 }
 
@@ -133,7 +133,7 @@ void MPU6050::set_gyr_range(gyr_range_t range)
 			gyr_range_dps = 2000.0f;
 			break;
 	}
-	i2c.write_uint8(reg_gyr_config_addr, reg_val);
+	i2c.set(reg_gyr_config_addr, reg_val);
 	gyr_per_lsb = gyr_range_dps * (M_PI / 180.0f) / 32768.0f;
 }
 
@@ -142,7 +142,7 @@ void MPU6050::set_gyr_range(gyr_range_t range)
  */
 void MPU6050::update()
 {
-	i2c.read_sequence(reg_acc_x_addr, 14);
+	i2c.get_seq(reg_acc_x_addr, 14);
 	read_acc();
 	read_tmp();
 	read_gyr();
@@ -153,7 +153,7 @@ void MPU6050::update()
  */
 void MPU6050::update_acc()
 {
-	i2c.read_sequence(reg_acc_x_addr, 6);
+	i2c.get_seq(reg_acc_x_addr, 6);
 	read_acc();
 }
 
@@ -167,7 +167,7 @@ float MPU6050::get_acc_x()
 		read_acc_x = false;
 		return acc_x;
 	}
-	return int16_to_acc(i2c.read_int16(reg_acc_x_addr));
+	return int16_to_acc(i2c.get_seq(reg_acc_x_addr, 2));
 }
 
 /**
@@ -180,7 +180,7 @@ float MPU6050::get_acc_y()
 		read_acc_y = false;
 		return acc_y;
 	}
-	return int16_to_acc(i2c.read_int16(reg_acc_y_addr));
+	return int16_to_acc(i2c.get_seq(reg_acc_y_addr, 2));
 }
 
 /**
@@ -193,7 +193,7 @@ float MPU6050::get_acc_z()
 		read_acc_z = false;
 		return acc_z;
 	}
-	return int16_to_acc(i2c.read_int16(reg_acc_z_addr));
+	return int16_to_acc(i2c.get_seq(reg_acc_z_addr, 2));
 }
 
 /**
@@ -201,7 +201,7 @@ float MPU6050::get_acc_z()
  */
 void MPU6050::update_tmp()
 {
-	i2c.read_sequence(reg_tmp_addr, 2);
+	i2c.get_seq(reg_tmp_addr, 2);
 	read_tmp();
 }
 
@@ -215,7 +215,7 @@ float MPU6050::get_tmp_c()
 		read_tmp_c = false;
 		return tmp_c;
 	}
-	return int16_to_tmp(i2c.read_int16(reg_tmp_addr));
+	return int16_to_tmp(i2c.get_seq(reg_tmp_addr, 2));
 }
 
 /**
@@ -223,7 +223,7 @@ float MPU6050::get_tmp_c()
  */
 void MPU6050::update_gyr()
 {
-	i2c.read_sequence(reg_gyr_x_addr, 6);
+	i2c.get_seq(reg_gyr_x_addr, 6);
 	read_gyr();
 }
 
@@ -237,7 +237,7 @@ float MPU6050::get_gyr_x()
 		read_gyr_x = false;
 		return gyr_x;
 	}
-	return int16_to_gyr_x(i2c.read_int16(reg_gyr_x_addr));
+	return int16_to_gyr_x(i2c.get_seq(reg_gyr_x_addr, 2));
 }
 
 /**
@@ -250,7 +250,7 @@ float MPU6050::get_gyr_y()
 		read_gyr_y = false;
 		return gyr_y;
 	}
-	return int16_to_gyr_y(i2c.read_int16(reg_gyr_y_addr));
+	return int16_to_gyr_y(i2c.get_seq(reg_gyr_y_addr, 2));
 }
 
 /**
@@ -263,7 +263,7 @@ float MPU6050::get_gyr_z()
 		read_gyr_z = false;
 		return gyr_z;
 	}
-	return int16_to_gyr_z(i2c.read_int16(reg_gyr_z_addr));
+	return int16_to_gyr_z(i2c.get_seq(reg_gyr_z_addr, 2));
 }
 
 /**
@@ -447,9 +447,9 @@ void MPU6050::set_gyr_z_cal(float offset)
  */
 void MPU6050::read_acc()
 {
-	acc_x = int16_to_acc(i2c.read_int16()); read_acc_x = true;
-	acc_y = int16_to_acc(i2c.read_int16()); read_acc_y = true;
-	acc_z = int16_to_acc(i2c.read_int16()); read_acc_z = true;
+	acc_x = int16_to_acc((int16_t)i2c); read_acc_x = true;
+	acc_y = int16_to_acc((int16_t)i2c); read_acc_y = true;
+	acc_z = int16_to_acc((int16_t)i2c); read_acc_z = true;
 }
 
 /**
@@ -457,7 +457,7 @@ void MPU6050::read_acc()
  */
 void MPU6050::read_tmp()
 {
-	tmp_c = int16_to_tmp(i2c.read_int16());
+	tmp_c = int16_to_tmp((int16_t)i2c);
 	read_tmp_c = true;
 }
 
@@ -466,9 +466,9 @@ void MPU6050::read_tmp()
  */
 void MPU6050::read_gyr()
 {
-	gyr_x = int16_to_gyr_x(i2c.read_int16()); read_gyr_x = true;
-	gyr_y = int16_to_gyr_y(i2c.read_int16()); read_gyr_y = true;
-	gyr_z = int16_to_gyr_z(i2c.read_int16()); read_gyr_z = true;
+	gyr_x = int16_to_gyr_x((int16_t)i2c); read_gyr_x = true;
+	gyr_y = int16_to_gyr_y((int16_t)i2c); read_gyr_y = true;
+	gyr_z = int16_to_gyr_z((int16_t)i2c); read_gyr_z = true;
 }
 
 /**
