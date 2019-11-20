@@ -5,6 +5,7 @@
  */
 #pragma once
 #include <I2CDevice.h>
+#include <I2CReading.h>
 
 /**
  * Minimum I2C Buffer Size
@@ -48,6 +49,11 @@ public:
 	}
 	gyr_range_t;
 
+	// Gyro offsets [rad/s]
+	float gyr_x_cal;
+	float gyr_y_cal;
+	float gyr_z_cal;
+
 	// Initialization and Basics
 	MPU6050(I2CDevice::i2c_t* i2c, bool addr_sel = false);
 	bool init();
@@ -79,12 +85,6 @@ public:
 	float get_gyr_x_var();
 	float get_gyr_y_var();
 	float get_gyr_z_var();
-	float get_gyr_x_cal();
-	float get_gyr_y_cal();
-	float get_gyr_z_cal();
-	void set_gyr_x_cal(float offset);
-	void set_gyr_y_cal(float offset);
-	void set_gyr_z_cal(float offset);
 
 protected:
 
@@ -117,34 +117,21 @@ protected:
 	static const uint8_t reg_acc_x_addr = 0x3B;
 	static const uint8_t reg_acc_y_addr = 0x3D;
 	static const uint8_t reg_acc_z_addr = 0x3F;
-	float acc_x; bool read_acc_x;
-	float acc_y; bool read_acc_y;
-	float acc_z; bool read_acc_z;
-	float int16_to_acc(int16_t raw);
-	void read_acc();
+	I2CReading<int16_t> acc_x, acc_y, acc_z;
 
 	// Thermometer Reading
 	static const float tmp_per_lsb;
 	static const float tmp_offset_C;
-	static const uint8_t reg_tmp_addr = 0x41;
-	float tmp_c; bool read_tmp_c;
-	float int16_to_tmp(int16_t raw);
-	void read_tmp();
+	static const uint8_t reg_tmp_c_addr = 0x41;
+	I2CReading<int16_t> tmp_c;
 
 	// Gyroscope Reading
 	static const uint8_t reg_gyr_x_addr = 0x43;
 	static const uint8_t reg_gyr_y_addr = 0x45;
 	static const uint8_t reg_gyr_z_addr = 0x47;
-	float gyr_x; bool read_gyr_x;
-	float gyr_y; bool read_gyr_y;
-	float gyr_z; bool read_gyr_z;
-	float int16_to_gyr_x(int16_t raw);
-	float int16_to_gyr_y(int16_t raw);
-	float int16_to_gyr_z(int16_t raw);
-	void read_gyr();
+	I2CReading<int16_t> gyr_x, gyr_y, gyr_z;
 
 	// Calibration
 	float acc_x_var, acc_y_var, acc_z_var;
 	float gyr_x_var, gyr_y_var, gyr_z_var;
-	float gyr_x_cal, gyr_y_cal, gyr_z_cal;
 };

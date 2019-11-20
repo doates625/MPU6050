@@ -8,6 +8,7 @@ The MPU6050 is a 6-axis accelerometer, gyroscope, and thermometer. This library 
 ### Dependencies
 - [Platform](https://github.com/doates625/Platform.git)
 - [I2CDevice](https://github.com/doates625/I2CDevice.git)
+- [I2CReading](https://github.com/doates625/I2CReading.git)
 - [Struct](https://github.com/doates625/Struct.git)
 - [CppUtil](https://github.com/doates625/CppUtil.git)
 

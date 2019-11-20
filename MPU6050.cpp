@@ -19,19 +19,17 @@ const float MPU6050::tmp_offset_C = 36.53f;
  * @param add_sel Address select line (1 = high, 0 = low)
  */
 MPU6050::MPU6050(I2CDevice::i2c_t* i2c, bool addr_sel) :
-	i2c(i2c, addr_sel ? 0x69 : 0x68, Struct::msb_first)
+	i2c(i2c, addr_sel ? 0x69 : 0x68, Struct::msb_first),
+	acc_x(&(this->i2c), reg_acc_x_addr),
+	acc_y(&(this->i2c), reg_acc_y_addr),
+	acc_z(&(this->i2c), reg_acc_z_addr),
+	tmp_c(&(this->i2c), reg_tmp_c_addr),
+	gyr_x(&(this->i2c), reg_gyr_x_addr),
+	gyr_y(&(this->i2c), reg_gyr_y_addr),
+	gyr_z(&(this->i2c), reg_gyr_z_addr)
 {
 	// I2C interface
 	this->i2c_addr = addr_sel ? 0x69 : 0x68;
-
-	// State data
-	this->acc_x = 0.0f; read_acc_x = false;
-	this->acc_y = 0.0f; read_acc_y = false;
-	this->acc_z = 0.0f; read_acc_z = false;
-	this->tmp_c = 0.0f; read_tmp_c = false;
-	this->gyr_x = 0.0f; read_gyr_x = false;
-	this->gyr_y = 0.0f; read_gyr_y = false;
-	this->gyr_z = 0.0f; read_gyr_z = false;
 
 	// Calibration
 	this->acc_x_var = 0.0f; this->acc_y_var = 0.0f; this->acc_z_var = 0.0f;
@@ -143,9 +141,13 @@ void MPU6050::set_gyr_range(gyr_range_t range)
 void MPU6050::update()
 {
 	i2c.get_seq(reg_acc_x_addr, 14);
-	read_acc();
-	read_tmp();
-	read_gyr();
+	acc_x.update();
+	acc_y.update();
+	acc_z.update();
+	tmp_c.update();
+	gyr_x.update();
+	gyr_y.update();
+	gyr_z.update();
 }
 
 /**
@@ -154,7 +156,9 @@ void MPU6050::update()
 void MPU6050::update_acc()
 {
 	i2c.get_seq(reg_acc_x_addr, 6);
-	read_acc();
+	acc_x.update();
+	acc_y.update();
+	acc_z.update();
 }
 
 /**
@@ -162,12 +166,7 @@ void MPU6050::update_acc()
  */
 float MPU6050::get_acc_x()
 {
-	if (read_acc_x)
-	{
-		read_acc_x = false;
-		return acc_x;
-	}
-	return int16_to_acc(i2c.get_seq(reg_acc_x_addr, 2));
+	return acc_x * acc_per_lsb;
 }
 
 /**
@@ -175,12 +174,7 @@ float MPU6050::get_acc_x()
  */
 float MPU6050::get_acc_y()
 {
-	if (read_acc_y)
-	{
-		read_acc_y = false;
-		return acc_y;
-	}
-	return int16_to_acc(i2c.get_seq(reg_acc_y_addr, 2));
+	return acc_y * acc_per_lsb;
 }
 
 /**
@@ -188,12 +182,7 @@ float MPU6050::get_acc_y()
  */
 float MPU6050::get_acc_z()
 {
-	if (read_acc_z)
-	{
-		read_acc_z = false;
-		return acc_z;
-	}
-	return int16_to_acc(i2c.get_seq(reg_acc_z_addr, 2));
+	return acc_z * acc_per_lsb;
 }
 
 /**
@@ -201,8 +190,8 @@ float MPU6050::get_acc_z()
  */
 void MPU6050::update_tmp()
 {
-	i2c.get_seq(reg_tmp_addr, 2);
-	read_tmp();
+	i2c.get_seq(reg_tmp_c_addr, 2);
+	tmp_c.update();
 }
 
 /**
@@ -210,12 +199,7 @@ void MPU6050::update_tmp()
  */
 float MPU6050::get_tmp_c()
 {
-	if (read_tmp_c)
-	{
-		read_tmp_c = false;
-		return tmp_c;
-	}
-	return int16_to_tmp(i2c.get_seq(reg_tmp_addr, 2));
+	return tmp_c * tmp_per_lsb + tmp_offset_C;
 }
 
 /**
@@ -224,7 +208,9 @@ float MPU6050::get_tmp_c()
 void MPU6050::update_gyr()
 {
 	i2c.get_seq(reg_gyr_x_addr, 6);
-	read_gyr();
+	gyr_x.update();
+	gyr_y.update();
+	gyr_z.update();
 }
 
 /**
@@ -232,12 +218,7 @@ void MPU6050::update_gyr()
  */
 float MPU6050::get_gyr_x()
 {
-	if (read_gyr_x)
-	{
-		read_gyr_x = false;
-		return gyr_x;
-	}
-	return int16_to_gyr_x(i2c.get_seq(reg_gyr_x_addr, 2));
+	return gyr_x * gyr_per_lsb - gyr_x_cal;
 }
 
 /**
@@ -245,12 +226,7 @@ float MPU6050::get_gyr_x()
  */
 float MPU6050::get_gyr_y()
 {
-	if (read_gyr_y)
-	{
-		read_gyr_y = false;
-		return gyr_y;
-	}
-	return int16_to_gyr_y(i2c.get_seq(reg_gyr_y_addr, 2));
+	return gyr_y * gyr_per_lsb - gyr_y_cal;
 }
 
 /**
@@ -258,12 +234,7 @@ float MPU6050::get_gyr_y()
  */
 float MPU6050::get_gyr_z()
 {
-	if (read_gyr_z)
-	{
-		read_gyr_z = false;
-		return gyr_z;
-	}
-	return int16_to_gyr_z(i2c.get_seq(reg_gyr_z_addr, 2));
+	return gyr_z * gyr_per_lsb - gyr_z_cal;
 }
 
 /**
@@ -287,7 +258,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = acc_x;
+		samples[i] = get_acc_x();
 	}
 	float acc_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	acc_x_var = var(samples, MPU6050_CAL_SAMPLES, acc_x_mean);
@@ -296,7 +267,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = acc_y;
+		samples[i] = get_acc_y();
 	}
 	float acc_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	acc_y_var = var(samples, MPU6050_CAL_SAMPLES, acc_y_mean);
@@ -305,7 +276,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = acc_z;
+		samples[i] = get_acc_z();
 	}
 	float acc_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	acc_z_var =  var(samples, MPU6050_CAL_SAMPLES, acc_z_mean);
@@ -314,7 +285,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = gyr_x;
+		samples[i] = get_gyr_x();
 	}
 	float gyr_x_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	gyr_x_var = var(samples, MPU6050_CAL_SAMPLES, gyr_x_mean);
@@ -323,7 +294,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = gyr_y;
+		samples[i] = get_gyr_y();
 	}
 	float gyr_y_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	gyr_y_var = var(samples, MPU6050_CAL_SAMPLES, gyr_y_mean);
@@ -332,7 +303,7 @@ void MPU6050::calibrate()
 	for (uint32_t i = 0; i < MPU6050_CAL_SAMPLES; i++)
 	{
 		update();
-		samples[i] = gyr_z;
+		samples[i] = get_gyr_z();
 	}
 	float gyr_z_mean = mean(samples, MPU6050_CAL_SAMPLES);
 	gyr_z_var = var(samples, MPU6050_CAL_SAMPLES, gyr_z_mean);
@@ -389,124 +360,4 @@ float MPU6050::get_gyr_y_var()
 float MPU6050::get_gyr_z_var()
 {
 	return gyr_z_var;
-}
-
-/**
- * @brief Returns gyroscope x-axis calibration offset [rad/s]
- */
-float MPU6050::get_gyr_x_cal()
-{
-	return gyr_x_cal;
-}
-
-/**
- * @brief Returns gyroscope y-axis calibration offset [rad/s]
- */
-float MPU6050::get_gyr_y_cal()
-{
-	return gyr_y_cal;
-}
-
-/**
- * @brief Returns gyroscope z-axis calibration offset [rad/s]
- */
-float MPU6050::get_gyr_z_cal()
-{
-	return gyr_z_cal;
-}
-
-/**
- * @brief Sets gyroscope x-axis calibration offset
- * @param offset Calibration offset [rad/s]
- */
-void MPU6050::set_gyr_x_cal(float offset)
-{
-	gyr_x_cal = offset;
-}
-
-/**
- * @brief Sets gyroscope y-axis calibration offset
- * @param offset Calibration offset [rad/s]
- */
-void MPU6050::set_gyr_y_cal(float offset)
-{
-	gyr_y_cal = offset;
-}
-
-/**
- * @brief Sets gyroscope z-axis calibration offset
- * @param offset Calibration offset [rad/s]
- */
-void MPU6050::set_gyr_z_cal(float offset)
-{
-	gyr_z_cal = offset;
-}
-
-/**
- * @brief Reads acc registers after call to I2CDevice::get_seq()
- */
-void MPU6050::read_acc()
-{
-	acc_x = int16_to_acc((int16_t)i2c); read_acc_x = true;
-	acc_y = int16_to_acc((int16_t)i2c); read_acc_y = true;
-	acc_z = int16_to_acc((int16_t)i2c); read_acc_z = true;
-}
-
-/**
- * @brief Reads tmp registers after call to I2CDevice::get_seq()
- */
-void MPU6050::read_tmp()
-{
-	tmp_c = int16_to_tmp((int16_t)i2c);
-	read_tmp_c = true;
-}
-
-/**
- * @brief Reads gyr registers after call to I2CDevice::get_seq()
- */
-void MPU6050::read_gyr()
-{
-	gyr_x = int16_to_gyr_x((int16_t)i2c); read_gyr_x = true;
-	gyr_y = int16_to_gyr_y((int16_t)i2c); read_gyr_y = true;
-	gyr_z = int16_to_gyr_z((int16_t)i2c); read_gyr_z = true;
-}
-
-/**
- * @brief Converts int16 acceleration to [m/s^2]
- */
-float MPU6050::int16_to_acc(int16_t raw)
-{
-	return raw * acc_per_lsb;
-}
-
-/**
- * @brief Converts int16 temperature to [deg C]
- */
-float MPU6050::int16_to_tmp(int16_t raw)
-{
-	return raw * tmp_per_lsb + tmp_offset_C;
-}
-
-/**
- * @brief Converts int16 gyroscope x to [rad/s]
- */
-float MPU6050::int16_to_gyr_x(int16_t raw)
-{
-	return raw * gyr_per_lsb - gyr_x_cal;
-}
-
-/**
- * @brief Converts int16 gyroscope y to [rad/s]
- */
-float MPU6050::int16_to_gyr_y(int16_t raw)
-{
-	return raw * gyr_per_lsb - gyr_y_cal;
-}
-
-/**
- * @brief Converts int16 gyroscope z to [rad/s]
- */
-float MPU6050::int16_to_gyr_z(int16_t raw)
-{
-	return raw * gyr_per_lsb - gyr_z_cal;
 }
